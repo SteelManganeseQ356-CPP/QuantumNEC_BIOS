@@ -1,18 +1,18 @@
 [ORG 0x7c00]
 
-BaseOfStack	EQU	0x7c00
+BaseOfStack	                EQU	0x7c00
 
-BaseOfLoader	EQU	0x1000
-OffsetOfLoader	EQU	0x00
+BaseOfLoader	            EQU	0x1000
+OffsetOfLoader	            EQU	0x00
 
-RootDirSectors	EQU	14
-SectorNumOfRootDirStart	EQU	19
-SectorNumOfFAT1Start	EQU	1
-SectorBalance	EQU	17	
+RootDirSectors	            EQU	14
+SectorNumOfRootDirStart	    EQU	19
+SectorNumOfFAT1Start	    EQU	1
+SectorBalance	            EQU	17	
 
-	JMP	SHORT Start
+	JMP	SHORT _start
 	NOP
-	BS_OEMName	    DB	'MINEboot'
+	BS_OEMName	    DB	'QuantumNECBoot    '
 	BPB_BytesPerSec	DW	512
 	BPB_SecPerClus	DB	1
 	BPB_RsvdSecCnt	DW	1
@@ -27,11 +27,12 @@ SectorBalance	EQU	17
 	BPB_TotSec32	DD	0
 	BS_DrvNum	    DB	0
 	BS_Reserved1	DB	0
-	BS_BootSig	    DB	0x29
+	BS_BootSig	    DB	29h
 	BS_VolID	    DD	0
 	BS_VolLab	    DB	'boot loader'
-	BS_FileSysType	DB	'FAT12   '
-Start:
+	BS_FileSysType	DB	"FAT32   "
+
+_start:
 
 	MOV	AX,	CS
 	MOV	DS,	AX
@@ -58,8 +59,8 @@ Start:
 
 	MOV	AX,	1301h
 	MOV	BX,	000fh
-	MOV	DX,	0000h
-	MOV	CX,	13
+	MOV	DX,	0000h ; 0000H -> 第一行
+	MOV	CX,	23
 	MOV SI, STARTBOOT_MESSAGE
     CALL print
     
@@ -76,15 +77,6 @@ Search_In_Root_Dir_Begin:
     CMP WORD [RootDirSizeForLoop], 0
     JZ No_LoaderBin
     DEC WORD [RootDirSizeForLoop]
-
-    	; 打印字符串
-
-	MOV	AX,	1301h
-	MOV	BX,	000fh
-	MOV	DX,	0100h
-	MOV	CX,	13
-	MOV SI, STARTBOOT_MESSAGE
-    CALL print
 
     MOV AX, 00h
     MOV ES, AX
@@ -129,7 +121,7 @@ No_LoaderBin:
     MOV CX, 22
     MOV SI, ERROR_NOLOADER_MESSAGE
     CALL print
-    HLT
+    JMP $
 ; 模拟软盘读取功能
 ReadOneSector:
     PUSH BP
@@ -169,21 +161,12 @@ FileName_Found:
     MOV BX, OffsetOfLoader
     MOV AX, CX
 Go_On_Loading_File:
-    PUSH AX
-    PUSH BX
-    MOV AH, 0eh
-    MOV AL, '.'
-    MOV BL, 0fh
-    INT 10h
-    POP BX
-    POP AX
-
     MOV CL, 1
     CALL ReadOneSector
     POP AX
     CALL GetFATEntry
     CMP AX, 0fffh
-    JZ FileName_Found
+    JZ File_Loaded
     PUSH AX
     MOV DX, RootDirSectors
     ADD AX, DX
@@ -241,9 +224,9 @@ print:
     RET
 ; 临时变量和日志信息
 
-STARTBOOT_MESSAGE:          DB "Boot -> Start"
+STARTBOOT_MESSAGE:          DB "Boot To Loader -> Start"
 ERROR_NOLOADER_MESSAGE:     DB "ERROR: No Loader Found"
-LoaderFileName:             DB "LOADER BIN", 0              
+LoaderFileName:             DB "LOADER  BIN", 0              
 RootDirSizeForLoop          DW RootDirSectors
 SectorNo                    DW 0
 Odd                         DB 0
@@ -253,4 +236,3 @@ times	510 - ($ - $$)	    DB 0
 
 ; 最后两字节必须是0x55 0xaa
 DB	0x55, 0xaa
-

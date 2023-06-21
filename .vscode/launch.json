@@ -36,11 +36,16 @@
             "name": "Debug",
             "program": "D:/qemu/qemu-system-i386",
             "args": [
-                "-boot", "c",
-                "-m", "2048M",
-                "-hda", "${workspaceFolder}/build/Quantum-Os.img",
-                "-serial", "stdio",
-                "-s", "-S"
+                "-boot",
+                "c",
+                "-m",
+                "2048M",
+                "-hda",
+                "${workspaceFolder}/build/Quantum-Os.img",
+                "-serial",
+                "stdio",
+                "-s",
+                "-S"
             ],
             "cwd": "${workspaceFolder}"
         },
